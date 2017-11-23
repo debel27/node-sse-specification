@@ -21,9 +21,54 @@ The implementation MUST be fully compliant with the EventSource specification. I
 
 ## API proposal
 
-To better make sense of the suggested API, a classical workflow shall first be presented with common usages. The full API documentation comes next. 
+### Overview
+
+Basic example on an Express.js codebase :
+
+    const http = require('http');
+    const express = require('express');
+    const SSEService = require('sse-service'); // our package
+    const authenticate = require('./middlewares/authenticate');
+    
+    const app = express();
+    const sseService = new SSEService();
+
+    // the 'authenticate' middleware will add the 'userName' field to res.locals
+    app.get('/sse', authenticate, sseService.register);
+ 
+    http.createServer(app).listen(8080);
+
+    sseService.on('connection', (sseId, locals) => {
+      sseService.send('greetings', sseId); // sends data to the connection identified by sseId   
+      sseService.send(locals.userName, 'userConnected'); // sends event and data to all connections
+    }); 
+
+Advanced usage : handling disconnection
+
+    app.post('/logout', 
+      authenticate,
+      
+      (req, res, next) => {
+        
+        // closes all SSE connections related to the relevant user
+        sseService.unregister(
+          (sseId, locals) => locals.userName === res.locals.userName, 
+          () => {
+            // Informing all other connections of the disconnection, and moving on
+            sseService.send(locals.userName, 'userDisconnected');
+            next();
+          }
+        );
+        
+      }, 
+          
+      logout
+    );
+         
 
 ### Classical workflow
+
+To better make sense of the suggested API, a classical workflow shall first be presented step by step. The full API documentation comes next.
 
 #### Setup
 
