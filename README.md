@@ -7,7 +7,7 @@ Discussion and suggestions for improvements are welcome.
 **Node.js**
 
     const http = require('http');
-    const SSEService = require('sse-service');
+    const { SSEService } = require('sse');
     
     const sseService = new SSEService()
     http.createServer((request, response) => {
@@ -24,7 +24,7 @@ Discussion and suggestions for improvements are welcome.
 
     const http = require('http');
     const express = require('express');
-    const SSEService = require('sse-service');
+    const { SSEService } = require('sse');
     
     const app = express();
     const sseService = new SSEService();
@@ -40,21 +40,32 @@ Discussion and suggestions for improvements are welcome.
 
 # API
 
-  - [Concepts](#concepts)
-  - [Core](#core)
-  - [Connection management](#connection-management)
-  - [Sending data](#sending-data)
-  - [Events](#events)
-
-## Concepts
+## Concepts 
 
 Server-Sent Events are entirely managed through an `sseService`, that provides convenience methods to send data to one, several or all open connections.
 
-When matching the route for Server-Sent Events, the server **must** delegate the request to the `sseService`. Only the `sseService` is allowed to write headers/data to the response. 
+When matching the route for Server-Sent Events, the server **must** delegate the request to the `sseService`. Only the `sseService` is allowed to write headers/data to the response.
 
-## Core
+  
+  * [Class: sse.SSEID](#class-ssesseid)
+  * [Class sse.SSEService](#class-ssesseservice)
+     * [new sse.SSEService([opts])](#new-ssesseserviceopts)
+     * [Event: 'connection'](#event-connection)
+     * [Event: 'clientClose'](#event-clientclose)
+     * [Event: 'error'](#event-error)
+     * [sseService.close([cb])](#sseserviceclosecb)
+     * [sseService.register(req, res)](#sseserviceregisterreq-res)
+     * [sseService.resetLastEventId([cb])](#sseserviceresetlasteventidcb)
+     * [sseService.send(opts[, target[, cb]])](#sseservicesendopts-target-cb)
+     * [sseService.unRegister([target[, cb]])](#sseserviceunregistertarget-cb)
+ 
+## Class: `sse.SSEID`
 
-### `new SSEService([opts])`
+Object representing an open SSE connection on the server
+
+## Class `sse.SSEService`
+
+### `new sse.SSEService([opts])`
 
   - `opts {Object}` (optional)
   - `opts.heartbeatInterval {number}` (optional) - Number of seconds between heartbeats. 
@@ -64,26 +75,49 @@ When matching the route for Server-Sent Events, the server **must** delegate the
          Defaults to `15` 
   - `opts.maxNbConnections {integer}` (optional) - Allowed maximum number of simultaneously open SSE connections. 
          If set to a negative number, there is no limit. 
-         If the number of open SSE connections reaches the limit, incoming connections will be ended immediately, following the congestion avoidance strategy.
+         If the number of open SSE connections reaches the limit, incoming connections will be ended immediately.
          Defaults to `-1`
-  - `opts.congestionAvoidanceStrategy {SSEService.CongestionAvoidanceStrategy}` (optional)
 
 > While it is allowed to have multiple instances of an `SSEService` on a same server, it is *not* recommended as doing so would multiply the number of open connections to that server, consuming resources unnecessarily.
 >
 > Instead, it is preferable to have a single route for Server-Sent Events per server, and implement event management at the application level. 
 
-### `SSEService.close([cb])`
+
+### Event: 'connection'
+
+  - `sseId {sse.SSEID}` - Connection's SSE identifier
+  - `locals {Object}` - The `res.locals` object of the connection
+  
+Event emitted when an SSE connection has been successfully established
+  
+**Example**
+
+    sseService.on('connection', (sseId, {userName}) => {
+      sseService.send('greetings', sseId);   
+      sseService.send(userName, 'userConnected');
+    });
+    
+### Event: 'clientClose'
+
+  - `sseId {sse.SSEID}` - Connection's SSE identifier
+  - `locals {Object}` - The `res.locals` object of the connection
+
+Event emitted when the client closed the connection
+    
+### Event: 'error'
+
+  - `err {Error}` - The error
+
+Event emitted when an error occurred during SSE connection's establishment.
+
+### `sseService.close([cb])`
 
   - `cb {function}` (optional) - Callback function
 
 Closes the service by terminating all open connections, and frees up resources. The service won't accept any more connection. 
 Further incoming connections will be terminated immediately with a `204` HTTP status code, preventing clients from attempting to reconnect.
 
-## Connection management
-
-> `http.IncomingMessage` and `http.ServerResponse` respectively correspond to request and response objects from the Node `http` API.
-
-### `SSEService.register(req, res)`
+### `sseService.register(req, res)`
 
   - `req {http.IncomingMessage}` - The incoming HTTP request
   - `res {http.ServerResponse}` - The server response
@@ -99,29 +133,15 @@ Sets up an SSE connection by doing the following :
 The connection will be rejected if the `Accept` header in the `req` object is not set to 'text/event-stream'.
  
 This function accepts no callback, to avoid subsequent code to possibly sending data to the `res` object. 
-Instead, the `SSEService.connection` event is emitted if connection was successful. The `SSEService.error` event is emitted if there was an error during registration.
-    
-### `SSEService.unRegister([target[, cb]])`
+Instead, the service will emit a 'connection' event if the connection was successful. If not, it will emit an 'error' event.
 
-  - `target {SSEService.SSEID | function}` - The target connection(s). Defaults to `null` (targets all connections)
-  - `cb {function}` (optional) - Callback function 
+### `sseService.resetLastEventId([cb])`
 
-This operation closes the response(s) object(s) matching the `target` argument and frees up resources. If no `target` argument is provided, all connections will be closed.
+  - `cb {function}` (optional) - Callback function
+  
+Resets the Last-Event-ID to the client
 
-Once a connection has been closed, it can't be sent down any more data. 
-
-Clients that close the connection on their own will be automatically unregistered from the service.
-
-> **Note** Due to the optional nature of both the `target` and `cb` arguments, if `SSEService.unRegister` is called
-> with only one function as its argument, this function will be considered as the callback. This behaviour will be applied to all methods having a `target` argument.
-
-### Class: `SSEService.SSEID`
-
-Object representing an open SSE connection on the server
-
-## Sending data
-
-### `SSEService.send(opts[, target[, cb]])`
+### `sseService.send(opts[, target[, cb]])`
 
   - `opts {Object}`
   - `opts.data {*}` (optional) - Defaults to the empty string
@@ -129,7 +149,7 @@ Object representing an open SSE connection on the server
   - `opts.id {string}` (optional) - If falsy, no `id` field will be sent
   - `opts.retry {number}` (optional) - If falsy, no `retry` field will be sent
   - `opts.comment {string}` (optional) - If falsy, no comment will be sent
-  - `target {SSEService.SSEID | function}` (optional) - The target connection(s). Defaults to `null` (targets all connections)
+  - `target {sse.SSEID | function}` (optional) - The target connection(s). Defaults to `null` (targets all connections)
   - `cb {function}` (optional) - Callback function
   
 General-purpose method for sending information to the client. Convenience methods are also available :
@@ -138,45 +158,25 @@ General-purpose method for sending information to the client. Convenience method
  - `sendEvent(event, data[, id[, target[, cb]]])` 
  - `sendComment(comment[, target[, cb]])`
  - `sendRetry(retry[, target[, cb]])`
-  
-### `SSEService.resetLastEventId([cb])`
 
-  - `cb {function}` (optional) - Callback function
-  
-Resets the Last-Event-ID to the client
+### `sseService.unRegister([target[, cb]])`
 
-## Events
+  - `target {sse.SSEID | function}` - The target connection(s). Defaults to `null` (targets all connections)
+  - `cb {function}` (optional) - Callback function 
 
-### `connection`
+This operation closes the response(s) object(s) matching the `target` argument and frees up resources. If no `target` argument is provided, all connections will be closed.
 
-  - `sseId {SSEService.SSEID}` - Connection's SSE identifier
-  - `locals {Object}` - The `res.locals` object of the connection
-  
-Event emitted when an SSE connection has been successfully established
-  
-**Example**
+Once a connection has been closed, it can't be sent down any more data. 
 
-    sseService.on('connection', (sseId, {userName}) => {
-      sseService.send('greetings', sseId);   
-      sseService.send(userName, 'userConnected');
-    });
-    
-### `error`
+Clients that close the connection on their own will be automatically unregistered from the service.
 
-  - `err {Error}` - The error
-
-Event emitted when an error occurred during SSE connection's establishment.
-
-### `clientClose`
-
-  - `sseId {SSEService.SSEID}` - Connection's SSE identifier
-  - `locals {Object}` - The `res.locals` object of the connection
-
-Event emitted when the client closed the connection
+> **Note** Due to the optional nature of both the `target` and `cb` arguments, if `sseService.unRegister` is called
+> with only one function as its argument, this function will be considered as the callback. This behaviour will be applied to all methods having a `target` argument.
 
 # TODO
 
-  - how to handle congestion ? Congestion may occur when a large connection pool needs to be browsed several times in quick succession
+  - how to handle congestion ? Congestion may occur when a large connection pool needs to be browsed several times in quick succession.
+    Idea : add to the SSEService constructor an `opts.congestionAvoidanceStrategy {sse.CongestionAvoidanceStrategy}` (optional).
 
 # Support
 
