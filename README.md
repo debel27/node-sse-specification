@@ -151,18 +151,6 @@ General-purpose method for sending information to the client. Convenience method
   
 Resets the Last-Event-ID to the client
 
-#### `SSEService.pipeEvents(eventEmitter, sourceEvent[, opts])`
-
-  - `eventEmitter {EventEmitter}` - The source of the events
-  - `sourceEvent {string}` - The name of the source event to pipe
-  - `opts {Object}` (optional)
-  - `opts.targetEvent {string}` (optional) - The name of event to send to the connection. Defaults to the `sourceEvent` argument
-  - `opts.dataTransformer {function}` (optional) - The transformation function to apply on the object passed to the event handler.
-         Defaults to the identity function 
-  - `opts.target {SSEService.SSEID | function}` (optional) - The target connection(s). Defaults to `null` (targets all connections)
-
-Any `sourceEvent` event emitted from the `eventEmitter` argument shall be piped to `SSEService.send`.
-
 ### Events
 
 #### Event: `SSEService.connection`
