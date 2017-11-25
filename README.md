@@ -83,10 +83,6 @@ Further incoming connections will be terminated immediately with a `204` HTTP st
 
 > `http.IncomingMessage` and `http.ServerResponse` respectively correspond to request and response objects from the Node `http` API.
 
-### Class: `SSEService.SSEID`
-
-Object representing an open SSE connection on the server
-
 ### `SSEService.register(req, res)`
 
   - `req {http.IncomingMessage}` - The incoming HTTP request
@@ -118,6 +114,10 @@ Clients that close the connection on their own will be automatically unregistere
 
 > **Note** Due to the optional nature of both the `target` and `cb` arguments, if `SSEService.unRegister` is called
 > with only one function as its argument, this function will be considered as the callback. This behaviour will be applied to all methods having a `target` argument.
+
+### Class: `SSEService.SSEID`
+
+Object representing an open SSE connection on the server
 
 ## Sending data
 
