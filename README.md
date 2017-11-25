@@ -46,6 +46,12 @@ Discussion and suggestions for improvements are welcome.
 
 ## API
 
+  - [Concepts](#concepts)
+  - [Core](#core)
+  - [Connection management](#connection-management)
+  - [Sending data](#sending-data)
+  - [Events](#events)
+
 ### Concepts
 
 Server-Sent Events are entirely managed through an `sseService`, that provides convenience methods to send data to one, several or all open connections.
