@@ -38,7 +38,7 @@ Discussion and suggestions for improvements are welcome.
       sseService.send({event:'user-connected'}); // broadcasts data to all responses
     })
 
-## API
+# API
 
   - [Concepts](#concepts)
   - [Core](#core)
@@ -46,15 +46,15 @@ Discussion and suggestions for improvements are welcome.
   - [Sending data](#sending-data)
   - [Events](#events)
 
-### Concepts
+## Concepts
 
 Server-Sent Events are entirely managed through an `sseService`, that provides convenience methods to send data to one, several or all open connections.
 
 When matching the route for Server-Sent Events, the server **must** delegate the request to the `sseService`. Only the `sseService` is allowed to write headers/data to the response. 
 
-### Core
+## Core
 
-#### `new SSEService([opts])`
+### `new SSEService([opts])`
 
   - `opts {Object}` (optional)
   - `opts.heartbeatInterval {number}` (optional) - Number of seconds between heartbeats. 
@@ -72,22 +72,22 @@ When matching the route for Server-Sent Events, the server **must** delegate the
 >
 > Instead, it is preferable to have a single route for Server-Sent Events per server, and implement event management at the application level. 
 
-#### `SSEService.close([cb])`
+### `SSEService.close([cb])`
 
   - `cb {function}` (optional) - Callback function
 
 Closes the service by terminating all open connections, and frees up resources. The service won't accept any more connection. 
 Further incoming connections will be terminated immediately with a `204` HTTP status code, preventing clients from attempting to reconnect.
 
-### Connection management
+## Connection management
 
 > `http.IncomingMessage` and `http.ServerResponse` respectively correspond to request and response objects from the Node `http` API.
 
-#### Class: `SSEService.SSEID`
+### Class: `SSEService.SSEID`
 
 Object representing an open SSE connection on the server
 
-#### `SSEService.register(req, res)`
+### `SSEService.register(req, res)`
 
   - `req {http.IncomingMessage}` - The incoming HTTP request
   - `res {http.ServerResponse}` - The server response
@@ -105,7 +105,7 @@ The connection will be rejected if the `Accept` header in the `req` object is no
 This function accepts no callback, to avoid subsequent code to possibly sending data to the `res` object. 
 Instead, the `SSEService.connection` event is emitted if connection was successful. The `SSEService.error` event is emitted if there was an error during registration.
     
-#### `SSEService.unRegister([target[, cb]])`
+### `SSEService.unRegister([target[, cb]])`
 
   - `target {SSEService.SSEID | function}` - The target connection(s). Defaults to `null` (targets all connections)
   - `cb {function}` (optional) - Callback function 
@@ -119,9 +119,9 @@ Clients that close the connection on their own will be automatically unregistere
 > **Note** Due to the optional nature of both the `target` and `cb` arguments, if `SSEService.unRegister` is called
 > with only one function as its argument, this function will be considered as the callback. This behaviour will be applied to all methods having a `target` argument.
 
-### Sending data
+## Sending data
 
-#### `SSEService.send(opts[, target[, cb]])`
+### `SSEService.send(opts[, target[, cb]])`
 
   - `opts {Object}`
   - `opts.data {*}` (optional) - Defaults to the empty string
@@ -139,15 +139,15 @@ General-purpose method for sending information to the client. Convenience method
  - `sendComment(comment[, target[, cb]])`
  - `sendRetry(retry[, target[, cb]])`
   
-#### `SSEService.resetLastEventId([cb])`
+### `SSEService.resetLastEventId([cb])`
 
   - `cb {function}` (optional) - Callback function
   
 Resets the Last-Event-ID to the client
 
-### Events
+## Events
 
-#### `connection`
+### `connection`
 
   - `sseId {SSEService.SSEID}` - Connection's SSE identifier
   - `locals {Object}` - The `res.locals` object of the connection
@@ -161,26 +161,26 @@ Event emitted when an SSE connection has been successfully established
       sseService.send(userName, 'userConnected');
     });
     
-#### `error`
+### `error`
 
   - `err {Error}` - The error
 
 Event emitted when an error occurred during SSE connection's establishment.
 
-#### `clientClose`
+### `clientClose`
 
   - `sseId {SSEService.SSEID}` - Connection's SSE identifier
   - `locals {Object}` - The `res.locals` object of the connection
 
 Event emitted when the client closed the connection
 
-## TODO
+# TODO
 
   - how to handle congestion ? Congestion may occur when a large connection pool needs to be browsed several times in quick succession
 
-## Support
+# Support
 
 Supports Node.js 6.x and above.
 
 Implementation of this specification is expected to use Node.js core methods to respond to the client, in particular `ServerResponse.writeHead()`, `ServerResponse.write()` and `ServerResponse.end()`.
-For this reason, it is **not expected to support Koa.js**, that has its own way of handling responses (see http://koajs.com/#context)
+For this reason, it is **does not support Koa.js**, that has its own way of handling responses (see http://koajs.com/#context)
