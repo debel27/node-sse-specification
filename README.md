@@ -38,14 +38,15 @@ Discussion and suggestions for improvements are welcome.
       sseService.send({event:'user-connected'}); // broadcasts data to all responses
     })
 
+# Overview 
+
+Server-Sent Events are entirely managed by an `sseService`.
+
+This service guarantees consistency with respect to the [EventSource specification](https://html.spec.whatwg.org/multipage/server-sent-events.html#server-sent-events), provided that the server delegates the request to the `sseService` without sending any headers/data to the response.
+
+The `sseService` exposes methods to send data with fine-grained targeting on the open SSE connections.
+
 # API
-
-## Concepts 
-
-Server-Sent Events are entirely managed through an `sseService`, that provides convenience methods to send data to one, several or all open connections.
-
-When matching the route for Server-Sent Events, the server **must** delegate the request to the `sseService`. Only the `sseService` is allowed to write headers/data to the response.
-
   
   * [Class: sse.SSEID](#class-ssesseid)
   * [Class sse.SSEService](#class-ssesseservice)
@@ -90,7 +91,7 @@ Object representing an open SSE connection on the server
   
 Event emitted when an SSE connection has been successfully established
   
-**Example**
+Example :
 
     sseService.on('connection', (sseId, {userName}) => {
       sseService.send('greetings', sseId);   
