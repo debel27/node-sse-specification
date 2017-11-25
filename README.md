@@ -15,12 +15,9 @@ Discussion and suggestions for improvements are welcome.
         sseService.register(request, response);
     }).listen(8080);
     
-    sseService.on('connection', ({sseId}) => {
-      // sends data to one response
-      sseService.send('hello', sseId);
-       
-       // broadcasts data to all responses
-      sseService.send({event:'user-connected'});
+    sseService.on('connection', sseId => {
+      sseService.send('hello', sseId); // sends data to a single response
+      sseService.send({event:'user-connected'}); // broadcasts data to all responses
     });
 
 **Express.js**
@@ -36,12 +33,9 @@ Discussion and suggestions for improvements are welcome.
  
     http.createServer(app).listen(8080);
 
-    sseService.on('connection', ({sseId}) => {
-      // sends data to one response
-      sseService.send('hello', sseId);
-       
-       // broadcasts data to all responses
-      sseService.send({event:'user-connected'});
+    sseService.on('connection', sseId => {
+      sseService.send('hello', sseId); // sends data to a single response
+      sseService.send({event:'user-connected'}); // broadcasts data to all responses
     })
 
 ## API
@@ -153,7 +147,7 @@ Resets the Last-Event-ID to the client
 
 ### Events
 
-#### Event: `SSEService.connection`
+#### `connection`
 
   - `sseId {SSEService.SSEID}` - Connection's SSE identifier
   - `locals {Object}` - The `res.locals` object of the connection
@@ -162,16 +156,23 @@ Event emitted when an SSE connection has been successfully established
   
 **Example**
 
-    sseService.on('connection', (sseId, locals) => {
+    sseService.on('connection', (sseId, {userName}) => {
       sseService.send('greetings', sseId);   
-      sseService.send(locals.userName, 'userConnected');
+      sseService.send(userName, 'userConnected');
     });
     
-#### Event: `SSEService.error`
+#### `error`
 
   - `err {Error}` - The error
 
 Event emitted when an error occurred during SSE connection's establishment.
+
+#### `clientClose`
+
+  - `sseId {SSEService.SSEID}` - Connection's SSE identifier
+  - `locals {Object}` - The `res.locals` object of the connection
+
+Event emitted when the client closed the connection
 
 ## TODO
 
