@@ -47,6 +47,8 @@ This service guarantees consistency with respect to the [EventSource specificati
 The `sseService` exposes methods to send data with fine-grained targeting on the open SSE connections.
 
 # API
+
+> **[Stability](https://nodejs.org/dist/latest-v8.x/docs/api/documentation.html#documentation_stability_index) :** 1 - Experimental
   
   * [Class: sse.SSEID](#class-ssesseid)
   * [Class sse.SSEService](#class-ssesseservice)
@@ -153,12 +155,19 @@ Resets the Last-Event-ID to the client
   - `target {sse.SSEID | function}` (optional) - The target connection(s). Defaults to `null` (targets all connections)
   - `cb {function}` (optional) - Callback function
   
-General-purpose method for sending information to the client. Convenience methods are also available :
+General-purpose method for sending information to the client. 
+
+Convenience methods are also available : 
+
+`sendData(data[, target[, cb]])`
  
- - `sendData(data[, target[, cb]])`
- - `sendEvent(event, data[, id[, target[, cb]]])` 
- - `sendComment(comment[, target[, cb]])`
- - `sendRetry(retry[, target[, cb]])`
+`sendEvent(event, data[, id[, target[, cb]]])`
+
+`sendComment(comment[, target[, cb]])`
+ 
+`sendRetry(retry[, target[, cb]])`
+
+They all are shorthand methods that call `sseService.send` under the hood with the correct parameters
 
 ### `sseService.unRegister([target[, cb]])`
 
